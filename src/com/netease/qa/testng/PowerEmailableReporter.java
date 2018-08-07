@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.thoughtworks.qdox.JavaProjectBuilder;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.testng.IInvokedMethod;
 import org.testng.IReporter;
 import org.testng.IResultMap;
@@ -32,7 +35,6 @@ import org.testng.internal.Utils;
 import org.testng.log4testng.Logger;
 import org.testng.xml.XmlSuite;
 
-import com.thoughtworks.qdox.JavaDocBuilder;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaMethod;
@@ -60,7 +62,8 @@ public class PowerEmailableReporter implements IReporter {
 
 	private Set<Integer> testIds = new HashSet<Integer>();
 	private List<Integer> allRunTestIds = new ArrayList<Integer>();
-	private JavaDocBuilder builder = new JavaDocBuilder();
+	private JavaProjectBuilder builder = new JavaProjectBuilder();
+	private JSONArray pathJsonArray = new JSONArray();
 
 	// ~ Methods --------------------------------------------------------------
 
@@ -86,6 +89,17 @@ public class PowerEmailableReporter implements IReporter {
 		endHtml(m_out);
 		m_out.flush();
 		m_out.close();
+
+		//如果设置了api的参数，则保持一份json文件
+		try{
+			File file = new File(outdir + "/testng-api.json");
+			file.createNewFile();
+			BufferedWriter output = new BufferedWriter(new FileWriter(file));
+			output.write(pathJsonArray.toString());
+			output.close();
+		} catch (Exception e) {
+			System.out.println("create json File error=" + e.getMessage());
+		}
 	}
 
 	protected PrintWriter createWriter(String outdir) throws IOException {
@@ -232,7 +246,7 @@ public class PowerEmailableReporter implements IReporter {
 				buff.append("<td><a href=\"#m" + methodId + "\">" + qualifiedName(method) + " "
 						+ (description != null && description.length() > 0 ? "(\"" + description + "\")" : "") + "</a>"
 						+ (null == testInstanceName ? "" : "<br>(" + testInstanceName + ")") + "</td><td>" + this.getAuthors(className, method)
-						+ "</td><td class=\"numi\">" + resultSet.size() + "</td>" + "<td>" + (count == 0 ? "" : count) + "</td>" + "<td>"
+						+ "</td><td>" + this.getApi(className, method) + "</td><td class=\"numi\">" + resultSet.size() + "</td>" + "<td>" + (count == 0 ? "" : count) + "</td>" + "<td>"
 						+ parameterString + "</td>"	+ "<td>" + start + "</td>" + "<td class=\"numi\">" + (end - start) + "</td>" + "</tr>");
 			}
 			if (mq > 0) {
@@ -249,7 +263,7 @@ public class PowerEmailableReporter implements IReporter {
 	/** Starts and defines columns result summary table */
 	private void startResultSummaryTable(String style) {
 		tableStart(style, "summary");
-		m_out.println("<tr><th>Class</th><th>Method</th><th>Authors</th><th># of<br/>Scenarios</th><th>Running Counts</th>"
+		m_out.println("<tr><th>Class</th><th>Method</th><th>Authors</th><th>API</th><th># of<br/>Scenarios</th><th>Running Counts</th>"
 				+ "<th>Parameters</th><th>Start</th><th>Time<br/>(ms)</th></tr>");
 		m_row = 0;
 	}
@@ -578,10 +592,10 @@ public class PowerEmailableReporter implements IReporter {
 	 */
 	private String getAuthors(String className, ITestNGMethod method) {
 		JavaClass cls = builder.getClassByName(className);
-		DocletTag[] authors = cls.getTagsByName("author");
+		List<DocletTag> authors = cls.getTagsByName("author");
 		// get class authors as default author name
 		String allAuthors = "";
-		if (authors.length == 0) {
+		if (authors.size() == 0) {
 			allAuthors = "unknown";
 		} else {
 	        for (DocletTag author : authors) {
@@ -589,11 +603,11 @@ public class PowerEmailableReporter implements IReporter {
 	        }
 		}
 		// get method author name
-		JavaMethod[] mtds = cls.getMethods();
+		List<JavaMethod> mtds = cls.getMethods();
 		for (JavaMethod mtd : mtds) {
 			if (mtd.getName().equals(method.getMethodName())) {
 				authors = mtd.getTagsByName("author");
-				if (authors.length != 0) {
+				if (authors.size() != 0) {
 					allAuthors = "";
 					for (DocletTag author : authors) {
 			            allAuthors += author.getValue() + " ";
@@ -604,6 +618,43 @@ public class PowerEmailableReporter implements IReporter {
 		}
 		return allAuthors.trim();
 	}
+
+	/**
+	 * 获取注释中配置的path和method变量
+	 * @param className
+	 * @param method
+	 * @return
+	 */
+	private String getApi(String className, ITestNGMethod method) {
+		JavaClass cls = builder.getClassByName(className);
+		String allPaths = "";
+		String apiValue = "";
+		String methodVlaue = "";
+		// get method path name
+		List<JavaMethod> mtds = cls.getMethods();
+		for (JavaMethod mtd : mtds) {
+			if (mtd.getName().equals(method.getMethodName())) {
+				DocletTag api = mtd.getTagByName("api");
+				DocletTag methodType = mtd.getTagByName("method");
+				if(api != null) {
+					apiValue = api.getValue();
+					if(methodType != null) {
+						methodVlaue = methodType.getValue();
+					}
+					JSONObject JsonObject = new JSONObject();
+					JsonObject.put("api", apiValue);
+					JsonObject.put("method", methodVlaue);
+					if(!pathJsonArray.contains(JsonObject)) {
+						pathJsonArray.add(JsonObject);
+					}
+					allPaths = (methodVlaue + " " + apiValue);
+				}
+				break;
+			}
+		}
+		return allPaths.trim();
+	}
+
 
 	/**
 	 * Get comment string of Java class.

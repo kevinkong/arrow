@@ -1,6 +1,7 @@
 package com.netease.qa.testng;
 
 import java.io.File;
+import java.lang.annotation.Annotation;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,6 +11,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import com.thoughtworks.qdox.JavaProjectBuilder;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import org.testng.IResultMap;
 import org.testng.ISuiteResult;
 import org.testng.ITestClass;
@@ -25,12 +28,11 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.internal.Utils;
 import org.testng.log4testng.Logger;
 import org.testng.reporters.XMLReporter;
+import org.testng.reporters.XMLReporterConfig;
 import org.testng.reporters.XMLStringBuffer;
 import org.testng.util.Strings;
 
 import com.netease.qa.testng.utils.ConfigReader;
-import com.thoughtworks.qdox.JavaDocBuilder;
-import com.thoughtworks.qdox.model.Annotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaMethod;
@@ -38,7 +40,7 @@ import com.thoughtworks.qdox.model.JavaMethod;
 public class NeXMLSuiteResultWriter {
 	private static final Logger logger = Logger.getLogger(NeXMLSuiteResultWriter.class);
 	private NeXMLReporterConfig config;
-	private JavaDocBuilder builder = new JavaDocBuilder();
+	private JavaProjectBuilder builder = new JavaProjectBuilder();
 
 	public NeXMLSuiteResultWriter(NeXMLReporterConfig config) {
 		this.config = config;
@@ -418,11 +420,11 @@ public class NeXMLSuiteResultWriter {
 	private String getAuthors(String className, ITestNGMethod method) {
 		logger.info("className = " + className);
 		JavaClass cls = builder.getClassByName(className);
-		DocletTag[] authors = cls.getTagsByName("author");
+		List<DocletTag> authors = cls.getTagsByName("author");
 		logger.info("authors = " + authors.toString());
 		// get class authors as default author name
 		String allAuthors = "";
-		if (authors.length == 0) {
+		if (authors.size() == 0) {
 			allAuthors = "";
 		} else {
 	        for (DocletTag author : authors) {
@@ -430,12 +432,12 @@ public class NeXMLSuiteResultWriter {
 	        }
 		}
 		// get method author name
-		JavaMethod[] mtds = cls.getMethods();
+		List<JavaMethod> mtds = cls.getMethods();
 		logger.info("JavaMethod = " + mtds.toString());
 		for (JavaMethod mtd : mtds) {
 			if (mtd.getName().equals(method.getMethodName())) {
 				authors = mtd.getTagsByName("author");
-				if (authors.length != 0) {
+				if (authors.size() != 0) {
 					allAuthors = "";
 					for (DocletTag author : authors) {
 			            allAuthors += author.getValue() + " ";
@@ -454,22 +456,22 @@ public class NeXMLSuiteResultWriter {
 		String value = "";
 		JavaClass cls = builder.getClassByName(className);
 		
-		JavaMethod[] mtds = cls.getMethods();
+		List<JavaMethod> mtds = cls.getMethods();
 		logger.info("JavaMethod = " + mtds.toString());
 		for (JavaMethod mtd : mtds) {
 			if (mtd.getName().equals(method.getMethodName())) {
-				Annotation[] annotations = mtd.getAnnotations();
+				List<JavaAnnotation> annotations = mtd.getAnnotations();
 				logger.info("Annotation = " + annotations.toString());
-				for(Annotation ant : annotations)
+				for(JavaAnnotation ant : annotations)
 				{
 					logger.info("Annotation.getClass().getName() = " + ant.getClass().getName());
 					String clss = ant.getType().getFullyQualifiedName();
 					if(clss.equals("org.testng.annotations.Test"))
 					{
-						Map<String, String> map = ant.getNamedParameterMap();
+						Map<String, Object> map = ant.getNamedParameterMap();
 						if(map.containsKey(attr))
 						{
-							value = map.get(attr);
+							value = (String)map.get(attr);
 							value = value.substring(1, value.length() - 1);
 						}
 						

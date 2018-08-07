@@ -175,7 +175,7 @@ public class PowerXMLReport implements IReporter {
 	   */
 	  public static void addDurationAttributes(XMLReporterConfig config, Properties attributes,
 	      Date minStartDate, Date maxEndDate) {
-	    SimpleDateFormat format = new SimpleDateFormat(XMLReporterConfig.getTimestampFormat());
+	    SimpleDateFormat format = new SimpleDateFormat(config.getTimestampFormat());
 	    TimeZone utc = TimeZone.getTimeZone("UTC");
 	    format.setTimeZone(utc);
 	    String startTime = format.format(minStartDate);
@@ -187,13 +187,17 @@ public class PowerXMLReport implements IReporter {
 	    attributes.setProperty(XMLReporterConfig.ATTR_DURATION_MS, Long.toString(duration));
 	  }
 
-	  private Set<ITestNGMethod> getUniqueMethodSet(Collection<ITestNGMethod> methods) {
+	  private Set<ITestNGMethod> getMethodSet(Collection<ITestNGMethod> methods) {
 	    Set<ITestNGMethod> result = new LinkedHashSet<>();
 	    for (ITestNGMethod method : methods) {
 	      result.add(method);
 	    }
 	    return result;
 	  }
+
+	private Set<ITestNGMethod> getUniqueMethodSet(Collection<ITestNGMethod> methods) {
+		return new LinkedHashSet<>(methods);
+	}
 
 	  // TODO: This is not the smartest way to implement the config
 	  public int getFileFragmentationLevel() {
