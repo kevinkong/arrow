@@ -20,11 +20,13 @@ public class ConfigReader {
 	private int retryCount = 0;
 	private String sourceCodeDir = "src";
 	private String sourceCodeEncoding = "UTF-8";
+	private String apiUrl = "";
 
 	private static final String RETRYCOUNT = "retrycount";
 	private static final String SOURCEDIR = "sourcecodedir";
 	private static final String SOURCEENCODING = "sourcecodeencoding";
 	private static final String CONFIGFILE = "config.properties";
+	private static final String APIURL = "apiurl";
 
 	private ConfigReader() {
 		readConfig(CONFIGFILE);
@@ -54,6 +56,9 @@ public class ConfigReader {
 				if(key.toLowerCase().equals(SOURCEENCODING)) {
 					sourceCodeEncoding = properties.getProperty(key);
 				}
+				if(key.toLowerCase().equals(APIURL)) {
+					apiUrl = properties.getProperty(key);
+				}
 			}
 			if (sRetryCount != null) {
 				sRetryCount = sRetryCount.trim();
@@ -76,6 +81,10 @@ public class ConfigReader {
 
 	public String getSrouceCodeEncoding() {
 		return this.sourceCodeEncoding;
+	}
+
+	public String getApiUrl() {
+		return this.apiUrl;
 	}
 
 	/**
