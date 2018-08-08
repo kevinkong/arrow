@@ -629,6 +629,7 @@ public class PowerEmailableReporter implements IReporter {
 
 	/**
 	 * 获取注释中配置的path和method变量
+	 * https://github.com/paul-hammant/qdox
 	 * @param className
 	 * @param method
 	 * @return
@@ -642,20 +643,21 @@ public class PowerEmailableReporter implements IReporter {
 		List<JavaMethod> mtds = cls.getMethods();
 		for (JavaMethod mtd : mtds) {
 			if (mtd.getName().equals(method.getMethodName())) {
-				DocletTag api = mtd.getTagByName("api");
-				DocletTag methodType = mtd.getTagByName("method");
-				if(api != null) {
-					apiValue = api.getValue();
-					if(methodType != null) {
-						methodVlaue = methodType.getValue();
+				List<DocletTag> apis = mtd.getTagsByName("api");
+				for(DocletTag api: apis) {
+					if(api.getParameters().size() > 0) {
+						methodVlaue = api.getParameters().get(0);
+						if(api.getParameters().size() > 1) {
+							apiValue = api.getParameters().get(1);
+						}
+						JSONObject JsonObject = new JSONObject();
+						JsonObject.put("method", methodVlaue);
+						JsonObject.put("api", apiValue);
+						if(!pathJsonArray.contains(JsonObject)) {
+							pathJsonArray.add(JsonObject);
+						}
+						allPaths += (methodVlaue + " " + apiValue + " ");
 					}
-					JSONObject JsonObject = new JSONObject();
-					JsonObject.put("api", apiValue);
-					JsonObject.put("method", methodVlaue);
-					if(!pathJsonArray.contains(JsonObject)) {
-						pathJsonArray.add(JsonObject);
-					}
-					allPaths = (methodVlaue + " " + apiValue);
 				}
 				break;
 			}
