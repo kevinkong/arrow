@@ -54,7 +54,7 @@ public class ApiCoverageReport implements IReporter{
 //        String[] urls = new String[]{"http://c.x.test.you.163.com/dealer-app-api/v2/api-docs","http://c.x.test.you.163.com/dealer-member-api/v2/api-docs"};
         String[] urls = apiUrls.split(",");
         for(String url: urls) {
-            String server = url.split("/")[3];
+            String server = url.split("/")[4].split(".")[1];
             int serverAllApiCount = 0;
             int coverageApiCount = 0;
             String isCoverage = "";
