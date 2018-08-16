@@ -21,12 +21,14 @@ public class ConfigReader {
 	private String sourceCodeDir = "src";
 	private String sourceCodeEncoding = "UTF-8";
 	private String apiUrl = "";
+	private String ignorePath = "";
 
 	private static final String RETRYCOUNT = "retrycount";
 	private static final String SOURCEDIR = "sourcecodedir";
 	private static final String SOURCEENCODING = "sourcecodeencoding";
 	private static final String CONFIGFILE = "config.properties";
 	private static final String APIURL = "apiurl";
+	private static final String IGNOREPATH = "ignorepath";
 
 	private ConfigReader() {
 		readConfig(CONFIGFILE);
@@ -59,6 +61,9 @@ public class ConfigReader {
 				if(key.toLowerCase().equals(APIURL)) {
 					apiUrl = properties.getProperty(key);
 				}
+				if(key.toLowerCase().equals(IGNOREPATH)) {
+					ignorePath = properties.getProperty(key);
+				}
 			}
 			if (sRetryCount != null) {
 				sRetryCount = sRetryCount.trim();
@@ -85,6 +90,10 @@ public class ConfigReader {
 
 	public String getApiUrl() {
 		return this.apiUrl;
+	}
+
+	public String getignorePath() {
+		return this.ignorePath;
 	}
 
 	/**

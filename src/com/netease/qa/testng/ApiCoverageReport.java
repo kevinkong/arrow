@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author 孔庆云
  */
-public class ApiCoverageReport implements IReporter{
+public class ApiCoverageReport implements IReporter {
     public  final String FILE_NAME = "api-coverage-report.html";
     private JSONObject apiJsonObject = new JSONObject();
     private Logger logger = Logger.getLogger(ApiCoverageReport.class);
@@ -39,6 +39,8 @@ public class ApiCoverageReport implements IReporter{
     public void generateReport(List<XmlSuite> xmlSuites, List<ISuite> suites, String outputDirectory) {
         ConfigReader cr = ConfigReader.getInstance();
         String apiUrls = cr.getApiUrl();
+        String ignorePath = cr.getignorePath();
+        JSONArray ignorePathJsonArray = getIgnorePathJsonArray(ignorePath);
         String JsonContext = ReadFile(outputDirectory + "/testng-api.json");
         JSONArray fileApiJsonArray = JSONArray.fromObject(JsonContext);
         System.out.println(fileApiJsonArray.toString());
@@ -54,7 +56,14 @@ public class ApiCoverageReport implements IReporter{
 //        String[] urls = new String[]{"http://c.x.test.you.163.com/dealer-app-api/v2/api-docs","http://c.x.test.you.163.com/dealer-member-api/v2/api-docs"};
         String[] urls = apiUrls.split(",");
         for(String url: urls) {
-            String server = url.split("/")[4].split(".")[1];
+            String serverUrl = url.split("/")[4];
+            String[] arrayUrl = serverUrl.split(".");
+            String server = "";
+            if(arrayUrl.length == 0) {
+                 server = serverUrl;
+            } else {
+                 server = arrayUrl[1];
+            }
             int serverAllApiCount = 0;
             int coverageApiCount = 0;
             String isCoverage = "";
@@ -86,6 +95,10 @@ public class ApiCoverageReport implements IReporter{
                     if(fileApiJsonArray.contains(apiMethod)) {
                         coverageApiCount++;
                         isCoverage = "是";
+                    }
+                    else if(ignorePathJsonArray.contains(apiMethod)){
+                        coverageApiCount++;
+                        isCoverage = "忽略";
                     } else {
                         isCoverage = "";
                     }
@@ -112,7 +125,32 @@ public class ApiCoverageReport implements IReporter{
     }
 
 
+    /**
+     * 获取需要忽略的json数组
+     * @param ignorePath
+     * @return
+     */
+    private JSONArray getIgnorePathJsonArray(String ignorePath) {
+        String[] ignorePaths = ignorePath.split(",");
+        JSONArray ignorePathArray = new JSONArray();
+        for(String path: ignorePaths) {
+            addJsonArray("get",path, ignorePathArray);
+            addJsonArray("put",path, ignorePathArray);
+            addJsonArray("post",path, ignorePathArray);
+            addJsonArray("delete",path, ignorePathArray);
+            addJsonArray("head",path, ignorePathArray);
+            addJsonArray("options",path, ignorePathArray);
+            addJsonArray("patch",path, ignorePathArray);
+        }
+        return ignorePathArray;
+    }
 
+    private void addJsonArray(String method, String path, JSONArray ignorePathArray) {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("method",method);
+        jsonObject.put("api",path);
+        ignorePathArray.add(jsonObject);
+    }
 
     public String ReadFile(String Path){
         BufferedReader reader = null;
