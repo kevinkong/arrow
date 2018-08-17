@@ -13,7 +13,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.log4j.Logger;
 import org.testng.*;
-import org.testng.collections.Lists;
 import org.testng.xml.XmlSuite;
 
 import java.io.*;
@@ -26,7 +25,6 @@ import java.util.*;
  */
 public class ApiCoverageReport implements IReporter {
     public  final String FILE_NAME = "api-coverage-report.html";
-    private JSONObject apiJsonObject = new JSONObject();
     private Logger logger = Logger.getLogger(ApiCoverageReport.class);
     private PrintWriter output;
 
@@ -80,32 +78,36 @@ public class ApiCoverageReport implements IReporter {
                 JSONObject jsonObject = JSONObject.fromObject(response.body().string());
                 JSONObject pathsJson = jsonObject.getJSONObject("paths");
                 Iterator<String> keys = pathsJson.keys();
+                //循环获取API的PATH，比如"/api/v1/authority/mobile"
                 while (keys.hasNext()) {
-                    serverAllApiCount++;
                     String api = keys.next();
                     JSONObject apiJson = pathsJson.getJSONObject(api);
-                    String method = (String)apiJson.keys().next();
-                    JSONObject apiMethod = new JSONObject();
-                    apiMethod.put("method",method);
-                    apiMethod.put("api",api);
-                    apiJsonArray.add(apiMethod);
-                    output.print("<tr>");
-                    output.print("<td>" + method + "</td>");
-                    output.print("<td>" + api + "</td>");
-                    if(fileApiJsonArray.contains(apiMethod)) {
-                        coverageApiCount++;
-                        isCoverage = "是";
+                    Iterator<String> apiJsonKeys = apiJson.keys();
+                    //循环获取当前path的请求方式，比如get、post
+                    while(apiJsonKeys.hasNext()){
+                        serverAllApiCount++;
+                        String method = apiJsonKeys.next();
+                        JSONObject apiMethod = new JSONObject();
+                        apiMethod.put("method",method);
+                        apiMethod.put("api",api);
+                        apiJsonArray.add(apiMethod);
+                        output.print("<tr>");
+                        output.print("<td>" + method + "</td>");
+                        output.print("<td>" + api + "</td>");
+                        if(fileApiJsonArray.contains(apiMethod)) {
+                            coverageApiCount++;
+                            isCoverage = "是";
+                        }
+                        else if(ignorePathJsonArray.contains(apiMethod)){
+                            coverageApiCount++;
+                            isCoverage = "忽略";
+                        } else {
+                            isCoverage = "";
+                        }
+                        output.print("<td>" + isCoverage + "</td>");
+                        output.print("</tr>");
                     }
-                    else if(ignorePathJsonArray.contains(apiMethod)){
-                        coverageApiCount++;
-                        isCoverage = "忽略";
-                    } else {
-                        isCoverage = "";
-                    }
-                    output.print("<td>" + isCoverage + "</td>");
-                    output.print("</tr>");
                 }
-                apiJsonObject.put(server,apiJsonArray);
                 tableEnd();
                 System.out.println("coverageApiCount=" + coverageApiCount);
                 System.out.println("serverAllApiCount=" + serverAllApiCount);
